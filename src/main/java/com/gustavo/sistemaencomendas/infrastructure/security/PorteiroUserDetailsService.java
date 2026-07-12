@@ -1,6 +1,8 @@
 package com.gustavo.sistemaencomendas.infrastructure.security;
 
+import com.gustavo.sistemaencomendas.domain.model.Morador;
 import com.gustavo.sistemaencomendas.domain.model.Porteiro;
+import com.gustavo.sistemaencomendas.infrastructure.persistence.repository.MoradorRepository;
 import com.gustavo.sistemaencomendas.infrastructure.persistence.repository.PorteiroRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.User;
@@ -14,20 +16,34 @@ import org.springframework.stereotype.Service;
 public class PorteiroUserDetailsService implements UserDetailsService {
 
     private final PorteiroRepository porteiroRepository;
+    private final MoradorRepository moradorRepository;
 
     @Override
     public UserDetails loadUserByUsername(String login)
             throws UsernameNotFoundException {
 
-        Porteiro porteiro = porteiroRepository.findByLogin(login)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("Usuário não encontrado"));
+        Porteiro porteiro = porteiroRepository.findByLogin(login).orElse(null);
 
-        return User.builder()
-                .username(porteiro.getLogin())
-                .password(porteiro.getSenha())
-                .roles("PORTEIRO")
-                .disabled(!porteiro.isAtivo())
-                .build();
+        if (porteiro != null) {
+            return User.builder()
+                    .username(porteiro.getLogin())
+                    .password(porteiro.getSenha())
+                    .roles("PORTEIRO")
+                    .disabled(!porteiro.isAtivo())
+                    .build();
+        }
+
+        Morador morador = moradorRepository.findByLogin(login).orElse(null);
+
+        if (morador != null) {
+            return User.builder()
+                    .username(morador.getLogin())
+                    .password(morador.getSenha())
+                    .roles("MORADOR")
+                    .disabled(!morador.isAtivo())
+                    .build();
+        }
+
+        throw new UsernameNotFoundException("Usuário não encontrado");
     }
 }
