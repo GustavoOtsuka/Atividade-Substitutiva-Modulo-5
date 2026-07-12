@@ -1,22 +1,32 @@
 package com.gustavo.sistemaencomendas.application.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gustavo.sistemaencomendas.application.dto.EncomendaRecebidaEvento;
 import com.gustavo.sistemaencomendas.domain.model.Encomenda;
 import com.gustavo.sistemaencomendas.domain.model.Morador;
+import com.gustavo.sistemaencomendas.domain.model.OutboxEvento;
 import com.gustavo.sistemaencomendas.domain.model.StatusEncomenda;
 import com.gustavo.sistemaencomendas.domain.model.StatusNotificacao;
+import com.gustavo.sistemaencomendas.domain.model.StatusOutbox;
 import com.gustavo.sistemaencomendas.infrastructure.persistence.repository.EncomendaRepository;
+import com.gustavo.sistemaencomendas.infrastructure.persistence.repository.OutboxEventoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class EncomendaService {
 
     private final EncomendaRepository encomendaRepository;
+    private final OutboxEventoRepository outboxEventoRepository;
     private final MoradorService moradorService;
+    private final ObjectMapper objectMapper;
 
     public List<Encomenda> listarTodas() {
         return encomendaRepository.findAllByOrderByDataRecebimentoDesc();
@@ -28,6 +38,7 @@ public class EncomendaService {
                         new IllegalArgumentException("Encomenda não encontrada."));
     }
 
+    @Transactional
     public Encomenda cadastrar(Long moradorId, String descricao) {
         Morador morador = moradorService.buscarPorId(moradorId);
 
@@ -46,9 +57,38 @@ public class EncomendaService {
                 .moradorCiente(false)
                 .build();
 
-        return encomendaRepository.save(encomenda);
+        encomenda = encomendaRepository.save(encomenda);
+
+        UUID eventoId = UUID.randomUUID();
+
+        EncomendaRecebidaEvento evento = new EncomendaRecebidaEvento(
+                eventoId,
+                encomenda.getId(),
+                morador.getId(),
+                morador.getNome(),
+                morador.getEmail(),
+                morador.getApartamento(),
+                encomenda.getDescricao(),
+                encomenda.getDataRecebimento()
+        );
+
+        OutboxEvento outboxEvento = OutboxEvento.builder()
+                .id(eventoId)
+                .tipoEvento("ENCOMENDA_RECEBIDA")
+                .agregadoTipo("ENCOMENDA")
+                .agregadoId(encomenda.getId().toString())
+                .payload(converterParaJson(evento))
+                .status(StatusOutbox.PENDENTE)
+                .tentativas(0)
+                .criadoEm(LocalDateTime.now())
+                .build();
+
+        outboxEventoRepository.save(outboxEvento);
+
+        return encomenda;
     }
 
+    @Transactional
     public Encomenda registrarRetirada(Long id) {
         Encomenda encomenda = buscarPorId(id);
 
@@ -62,5 +102,16 @@ public class EncomendaService {
         encomenda.setDataRetirada(LocalDateTime.now());
 
         return encomendaRepository.save(encomenda);
+    }
+
+    private String converterParaJson(EncomendaRecebidaEvento evento) {
+        try {
+            return objectMapper.writeValueAsString(evento);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException(
+                    "Não foi possível criar o evento da encomenda.",
+                    exception
+            );
+        }
     }
 }
