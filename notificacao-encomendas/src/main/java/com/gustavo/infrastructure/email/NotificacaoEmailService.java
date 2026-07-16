@@ -16,6 +16,9 @@ public class NotificacaoEmailService {
 
     public void enviar(EncomendaRecebidaEvento evento) {
 
+
+
+
         String assunto = "Nova encomenda recebida";
 
         String mensagem = """

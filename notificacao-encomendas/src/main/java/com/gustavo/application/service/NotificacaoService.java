@@ -1,8 +1,8 @@
 package com.gustavo.application.service;
 
+import com.gustavo.application.consumer.ProcessamentoNotificacaoService;
 import com.gustavo.domain.model.EncomendaRecebidaEvento;
 import com.gustavo.infrastructure.email.NotificacaoEmailService;
-import com.gustavo.application.consumer.ProcessamentoNotificacaoService;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
@@ -21,18 +21,27 @@ public class NotificacaoService {
 
     public void processar(EncomendaRecebidaEvento evento) {
 
-        boolean novo =
-                processamentoService.registrarSeNovo(evento);
+        boolean novo = processamentoService.registrarSeNovo(evento);
 
         if (!novo) {
             return;
         }
 
-        processamentoService.marcarComoProcessando(evento);
+        try {
+            processamentoService.marcarComoProcessando(evento);
 
-        emailService.enviar(evento);
+            emailService.enviar(evento);
 
-        processamentoService.marcarComoEnviada(evento);
+            processamentoService.marcarComoEnviada(evento);
+
+        } catch (Exception exception) {
+
+            processamentoService.marcarComoFalhaTemporaria(
+                    evento,
+                    exception
+            );
+
+            throw exception;
+        }
     }
-
 }

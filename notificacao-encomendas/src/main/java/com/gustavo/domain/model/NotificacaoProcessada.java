@@ -25,6 +25,15 @@ public class NotificacaoProcessada {
     @Column(nullable = false, length = 150)
     public String email;
 
+    @Column(nullable = false, length = 30)
+    public String apartamento;
+
+    @Column(nullable = false, length = 500)
+    public String descricao;
+
+    @Column(name = "data_recebimento", nullable = false)
+    public LocalDateTime dataRecebimento;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     public StatusProcessamento status;
@@ -37,6 +46,9 @@ public class NotificacaoProcessada {
 
     @Column(name = "processada_em")
     public LocalDateTime processadaEm;
+
+    @Column(name = "proxima_tentativa_em")
+    public LocalDateTime proximaTentativaEm;
 
     @Column(name = "ultimo_erro", columnDefinition = "TEXT")
     public String ultimoErro;
