@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gustavo.domain.model.EncomendaRecebidaEvento;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
@@ -14,8 +13,16 @@ public class EncomendaRecebidaConsumer {
     private static final Logger LOG =
             Logger.getLogger(EncomendaRecebidaConsumer.class);
 
-    @Inject
-    ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
+    private final ProcessamentoNotificacaoService processamentoService;
+
+    public EncomendaRecebidaConsumer(
+            ObjectMapper objectMapper,
+            ProcessamentoNotificacaoService processamentoService
+    ) {
+        this.objectMapper = objectMapper;
+        this.processamentoService = processamentoService;
+    }
 
     @Incoming("encomendas")
     @Blocking
@@ -28,18 +35,28 @@ public class EncomendaRecebidaConsumer {
                             EncomendaRecebidaEvento.class
                     );
 
+            boolean eventoNovo =
+                    processamentoService.registrarSeNovo(evento);
+
+            if (!eventoNovo) {
+                LOG.warnf(
+                        "Evento duplicado ignorado: %s",
+                        evento.eventoId()
+                );
+                return;
+            }
+
             LOG.info("=========================================");
-            LOG.info("Nova encomenda recebida pelo Quarkus");
+            LOG.info("Evento registrado para processamento");
             LOG.infof("Evento: %s", evento.eventoId());
             LOG.infof("Morador: %s", evento.nomeMorador());
             LOG.infof("E-mail: %s", evento.emailMorador());
-            LOG.infof("Apartamento: %s", evento.apartamento());
             LOG.infof("Descrição: %s", evento.descricao());
             LOG.info("=========================================");
 
         } catch (Exception exception) {
             LOG.error(
-                    "Erro ao converter evento de encomenda.",
+                    "Erro ao processar evento de encomenda.",
                     exception
             );
 
