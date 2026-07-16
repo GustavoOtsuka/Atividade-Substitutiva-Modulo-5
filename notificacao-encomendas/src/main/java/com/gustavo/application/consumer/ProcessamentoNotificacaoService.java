@@ -42,4 +42,36 @@ public class ProcessamentoNotificacaoService {
 
         return true;
     }
+
+@Transactional
+public void marcarComoProcessando(EncomendaRecebidaEvento evento) {
+
+    NotificacaoProcessada notificacao =
+            repository.findByIdOptional(evento.eventoId())
+                    .orElseThrow(() ->
+                            new IllegalStateException(
+                                    "Notificação não encontrada."
+                            )
+                    );
+
+    notificacao.status = StatusProcessamento.PROCESSANDO;
+    notificacao.tentativas++;
+}
+
+@Transactional
+public void marcarComoEnviada(EncomendaRecebidaEvento evento) {
+
+    NotificacaoProcessada notificacao =
+            repository.findByIdOptional(evento.eventoId())
+                    .orElseThrow(() ->
+                            new IllegalStateException(
+                                    "Notificação não encontrada."
+                            )
+                    );
+
+    notificacao.status = StatusProcessamento.ENVIADA;
+    notificacao.processadaEm = LocalDateTime.now();
+    notificacao.ultimoErro = null;
+}
+
 }

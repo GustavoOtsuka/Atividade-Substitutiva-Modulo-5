@@ -1,6 +1,7 @@
 package com.gustavo.application.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gustavo.application.service.NotificacaoService;
 import com.gustavo.domain.model.EncomendaRecebidaEvento;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,14 +15,14 @@ public class EncomendaRecebidaConsumer {
             Logger.getLogger(EncomendaRecebidaConsumer.class);
 
     private final ObjectMapper objectMapper;
-    private final ProcessamentoNotificacaoService processamentoService;
+    private final NotificacaoService notificacaoService;
 
     public EncomendaRecebidaConsumer(
             ObjectMapper objectMapper,
-            ProcessamentoNotificacaoService processamentoService
+            NotificacaoService notificacaoService
     ) {
         this.objectMapper = objectMapper;
-        this.processamentoService = processamentoService;
+        this.notificacaoService = notificacaoService;
     }
 
     @Incoming("encomendas")
@@ -35,24 +36,12 @@ public class EncomendaRecebidaConsumer {
                             EncomendaRecebidaEvento.class
                     );
 
-            boolean eventoNovo =
-                    processamentoService.registrarSeNovo(evento);
+            notificacaoService.processar(evento);
 
-            if (!eventoNovo) {
-                LOG.warnf(
-                        "Evento duplicado ignorado: %s",
-                        evento.eventoId()
-                );
-                return;
-            }
-
-            LOG.info("=========================================");
-            LOG.info("Evento registrado para processamento");
-            LOG.infof("Evento: %s", evento.eventoId());
-            LOG.infof("Morador: %s", evento.nomeMorador());
-            LOG.infof("E-mail: %s", evento.emailMorador());
-            LOG.infof("Descrição: %s", evento.descricao());
-            LOG.info("=========================================");
+            LOG.infof(
+                    "Evento processado: %s",
+                    evento.eventoId()
+            );
 
         } catch (Exception exception) {
             LOG.error(
