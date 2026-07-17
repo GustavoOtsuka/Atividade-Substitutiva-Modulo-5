@@ -27,6 +27,7 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**"
                         ).permitAll()
+			.requestMatchers("/morador/confirmar/**").permitAll()
                         .requestMatchers("/porteiro/**").hasRole("PORTEIRO")
                         .requestMatchers("/morador/**").hasRole("MORADOR")
                         .anyRequest().authenticated()

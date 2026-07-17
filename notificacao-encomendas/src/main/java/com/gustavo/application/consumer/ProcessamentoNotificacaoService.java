@@ -39,6 +39,7 @@ public class ProcessamentoNotificacaoService {
         notificacao.apartamento = evento.apartamento();
         notificacao.descricao = evento.descricao();
         notificacao.dataRecebimento = evento.dataRecebimento();
+	notificacao.tokenConfirmacao = evento.tokenConfirmacao();
         notificacao.status = StatusProcessamento.RECEBIDA;
         notificacao.tentativas = 0;
         notificacao.recebidaEm = LocalDateTime.now();

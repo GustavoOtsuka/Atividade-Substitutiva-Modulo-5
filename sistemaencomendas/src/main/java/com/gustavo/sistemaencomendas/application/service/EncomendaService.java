@@ -55,6 +55,7 @@ public class EncomendaService {
                 .status(StatusEncomenda.RECEBIDA_NA_PORTARIA)
                 .statusNotificacao(StatusNotificacao.PENDENTE)
                 .moradorCiente(false)
+		.tokenConfirmacao(UUID.randomUUID())
                 .build();
 
         encomenda = encomendaRepository.save(encomenda);
@@ -69,7 +70,8 @@ public class EncomendaService {
                 morador.getEmail(),
                 morador.getApartamento(),
                 encomenda.getDescricao(),
-                encomenda.getDataRecebimento()
+                encomenda.getDataRecebimento(),
+		encomenda.getTokenConfirmacao()
         );
 
         OutboxEvento outboxEvento = OutboxEvento.builder()
@@ -102,6 +104,28 @@ public class EncomendaService {
         encomenda.setDataRetirada(LocalDateTime.now());
 
         return encomendaRepository.save(encomenda);
+    }
+
+
+    @Transactional
+    public void confirmarCiencia(UUID tokenConfirmacao) {
+
+        Encomenda encomenda = encomendaRepository
+                .findByTokenConfirmacao(tokenConfirmacao)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Token de confirmação inválido."
+                        )
+                );
+
+	if (encomenda.isMoradorCiente()) {
+	  return;
+	}
+
+        encomenda.setMoradorCiente(true);
+        encomenda.setDataCiencia(LocalDateTime.now());
+
+        encomendaRepository.save(encomenda);
     }
 
     private String converterParaJson(EncomendaRecebidaEvento evento) {

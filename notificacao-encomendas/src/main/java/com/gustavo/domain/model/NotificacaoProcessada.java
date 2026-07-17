@@ -34,6 +34,9 @@ public class NotificacaoProcessada {
     @Column(name = "data_recebimento", nullable = false)
     public LocalDateTime dataRecebimento;
 
+    @Column(name = "token_confirmacao", nullable = false)
+    public UUID tokenConfirmacao;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     public StatusProcessamento status;

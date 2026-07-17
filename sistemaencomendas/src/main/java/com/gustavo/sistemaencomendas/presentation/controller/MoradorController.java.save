@@ -76,30 +76,31 @@ public class MoradorController {
     }
 
 
-    @GetMapping("/morador/confirmar/{token}")
-    public String confirmarCiencia(
-            @PathVariable UUID token,
-            Model model
-    ) {
+	@GetMapping("/morador/confirmar/{token}")
+public String confirmarCiencia(
+        @PathVariable UUID token,
+        Model model
+) {
 
-        try {
-            encomendaService.confirmarCiencia(token);
+    try {
+        encomendaService.confirmarCiencia(token);
 
-            model.addAttribute(
-                    "mensagem",
-                    "Sua ciência da encomenda foi registrada com sucesso."
-            );
+        model.addAttribute(
+                "mensagem",
+                "Sua ciência da encomenda foi registrada com sucesso."
+        );
 
-        } catch (IllegalArgumentException exception) {
+    } catch (IllegalArgumentException exception) {
 
-            model.addAttribute(
-                    "erro",
-                    exception.getMessage()
-            );
-        }
-
-        return "morador/confirmacao";
+        model.addAttribute(
+                "erro",
+                exception.getMessage()
+        );
     }
+
+    return "morador/confirmacao";
+}
+
 
 
 }
