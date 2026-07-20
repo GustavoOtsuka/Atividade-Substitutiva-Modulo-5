@@ -128,6 +128,14 @@ public class EncomendaService {
         encomendaRepository.save(encomenda);
     }
 
+
+    public List<Encomenda> listarPorMorador(Long moradorId) {
+        return encomendaRepository
+                .findByMoradorIdOrderByDataRecebimentoDesc(moradorId);
+    }
+
+
+
     private String converterParaJson(EncomendaRecebidaEvento evento) {
         try {
             return objectMapper.writeValueAsString(evento);

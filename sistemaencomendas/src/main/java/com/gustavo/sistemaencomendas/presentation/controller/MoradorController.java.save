@@ -26,28 +26,8 @@ public class MoradorController {
         return "morador/dashboard";
     }
 
- 
-    @GetMapping("/morador/encomendas")
-    public String minhasEncomendas(
-            Authentication authentication,
-            Model model
-    ) {
-        Morador morador = moradorService.buscarPorLogin(
-                authentication.getName()
-        );
-
-        model.addAttribute("morador", morador);
-        model.addAttribute(
-                "encomendas",
-                encomendaService.listarPorMorador(morador.getId())
-        );
-
-        return "morador/encomendas";
-    }
-
-
-	@GetMapping("/morador/meus-dados")
-	public String meusDados(
+	@GetMapping("/morador/encomendas")
+	public String minhasEncomendas(
 	        Authentication authentication,
 	        Model model
 	) {
@@ -56,37 +36,12 @@ public class MoradorController {
 	    );
 
 	    model.addAttribute("morador", morador);
-
-	    return "morador/meus-dados";
-	}
-
-	@PostMapping("/morador/meus-dados")
-	public String atualizarMeusDados(
-	        Authentication authentication,
-	        @ModelAttribute Morador dados,
-	        Model model
-	) {
-
-	    Morador morador = moradorService.buscarPorLogin(
-	            authentication.getName()
+	    model.addAttribute(
+	            "encomendas",
+	            encomendaService.listarPorMorador(morador.getId())
 	    );
 
-	    try {
-
-	        moradorService.atualizarDadosMorador(
-	                morador.getId(),
-	                dados
-	        );
-
-	        return "redirect:/morador/meus-dados?sucesso";
-
-	    } catch (IllegalArgumentException e) {
-
-	        model.addAttribute("erro", e.getMessage());
-	        model.addAttribute("morador", dados);
-
-	        return "morador/meus-dados";
-	    }
+	    return "morador/encomendas";
 	}
 
 

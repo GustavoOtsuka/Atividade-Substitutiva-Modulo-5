@@ -76,28 +76,51 @@ public class MoradorService {
 
 
 
+@GetMapping("/morador/meus-dados")
+public String meusDados(
+        Authentication authentication,
+        Model model
+) {
+    Morador morador = moradorService.buscarPorLogin(
+            authentication.getName()
+    );
 
-	public Morador atualizarDadosMorador(Long id, Morador dados) {
-	    Morador morador = buscarPorId(id);
+    model.addAttribute("morador", morador);
 
-	    moradorRepository.findAll().stream()
-	            .filter(outro -> !outro.getId().equals(id))
-	            .filter(outro ->
-	                    outro.getEmail().equalsIgnoreCase(dados.getEmail())
-	            )
-	            .findFirst()
-	            .ifPresent(outro -> {
-	                throw new IllegalArgumentException(
-	                        "Já existe um morador com este e-mail."
-	                );
-	            });
+    return "morador/meus-dados";
+}
 
-	    morador.setNome(dados.getNome());
-	    morador.setTelefone(dados.getTelefone());
-	    morador.setEmail(dados.getEmail());
+@PostMapping("/morador/meus-dados")
+public String atualizarMeusDados(
+        Authentication authentication,
+        @ModelAttribute Morador dados,
+        Model model
+) {
 
-	    return moradorRepository.save(morador);
-	}
+    Morador morador = moradorService.buscarPorLogin(
+            authentication.getName()
+    );
+
+    try {
+
+        moradorService.atualizarDadosMorador(
+                morador.getId(),
+                dados
+        );
+
+        return "redirect:/morador/meus-dados?sucesso";
+
+    } catch (IllegalArgumentException e) {
+
+        model.addAttribute("erro", e.getMessage());
+        model.addAttribute("morador", dados);
+
+        return "morador/meus-dados";
+    }
+}
+
+
+
 
 
 }

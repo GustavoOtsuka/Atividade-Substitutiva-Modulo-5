@@ -38,7 +38,7 @@
 	            </p>
 			<a th:href="@{/morador/encomendas}" class="btn btn-primary">
 			    Acessar
-			</a>
+		]	</a>
                 </div>
             </div>
         </div>
@@ -50,11 +50,9 @@
                     <p class="card-text">
                         Atualize seu nome, apartamento e e-mail.
                     </p>
-
-			<a th:href="@{/morador/meus-dados}" class="btn btn-primary">
-			    Acessar
-			</a>
-
+                    <a href="#" class="btn btn-primary">
+                        Acessar
+                    </a>
                 </div>
             </div>
         </div>
