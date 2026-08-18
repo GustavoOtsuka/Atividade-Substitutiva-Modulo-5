@@ -32,7 +32,9 @@
 
             <p class="text-muted mb-0">
                 Morador:
-                <strong th:text="${morador.nome}">Nome do morador</strong>
+                <strong th:text="${morador.nome}">
+                    Nome do morador
+                </strong>
             </p>
         </div>
 
@@ -42,11 +44,19 @@
         </a>
     </div>
 
+    <!-- Mensagem após confirmação -->
+    <div class="alert alert-success"
+         th:if="${param.confirmada}">
+        Ciência da encomenda confirmada com sucesso.
+    </div>
+
+    <!-- Nenhuma encomenda -->
     <div class="alert alert-info"
          th:if="${#lists.isEmpty(encomendas)}">
         Nenhuma encomenda foi registrada para você.
     </div>
 
+    <!-- Lista de encomendas -->
     <div class="card shadow-sm"
          th:unless="${#lists.isEmpty(encomendas)}">
 
@@ -59,17 +69,21 @@
                     <th>Data de recebimento</th>
                     <th>Status</th>
                     <th>Ciência do morador</th>
+                    <th>Ação</th>
                     <th>Data de retirada</th>
                 </tr>
                 </thead>
 
                 <tbody>
+
                 <tr th:each="encomenda : ${encomendas}">
 
+                    <!-- Descrição -->
                     <td th:text="${encomenda.descricao}">
                         Descrição
                     </td>
 
+                    <!-- Data de recebimento -->
                     <td th:text="${#temporals.format(
                             encomenda.dataRecebimento,
                             'dd/MM/yyyy HH:mm'
@@ -77,11 +91,14 @@
                         20/07/2026 14:30
                     </td>
 
+                    <!-- Status -->
                     <td th:text="${encomenda.status}">
                         RECEBIDA_NA_PORTARIA
                     </td>
 
+                    <!-- Ciência -->
                     <td>
+
                         <span class="badge bg-success"
                               th:if="${encomenda.moradorCiente}">
                             Confirmada
@@ -91,9 +108,33 @@
                               th:unless="${encomenda.moradorCiente}">
                             Pendente
                         </span>
+
                     </td>
 
+                    <!-- Ação de confirmação -->
                     <td>
+
+                        <form th:if="${!encomenda.moradorCiente}"
+                              method="post"
+                              th:action="@{/morador/encomendas/{id}/confirmar(id=${encomenda.id})}">
+
+                            <button class="btn btn-sm btn-success"
+                                    type="submit">
+                                Confirmar ciência
+                            </button>
+
+                        </form>
+
+                        <span class="text-muted"
+                              th:if="${encomenda.moradorCiente}">
+                            Já confirmada
+                        </span>
+
+                    </td>
+
+                    <!-- Data de retirada -->
+                    <td>
+
                         <span th:if="${encomenda.dataRetirada != null}"
                               th:text="${#temporals.format(
                                       encomenda.dataRetirada,
@@ -106,9 +147,11 @@
                               th:unless="${encomenda.dataRetirada != null}">
                             Não retirada
                         </span>
+
                     </td>
 
                 </tr>
+
                 </tbody>
 
             </table>

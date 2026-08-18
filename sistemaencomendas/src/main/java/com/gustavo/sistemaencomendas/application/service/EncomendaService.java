@@ -55,8 +55,7 @@ public class EncomendaService {
                 .status(StatusEncomenda.RECEBIDA_NA_PORTARIA)
                 .statusNotificacao(StatusNotificacao.PENDENTE)
                 .moradorCiente(false)
-		.tokenConfirmacao(UUID.randomUUID())
-                .build();
+	            .build();
 
         encomenda = encomendaRepository.save(encomenda);
 
@@ -70,8 +69,7 @@ public class EncomendaService {
                 morador.getEmail(),
                 morador.getApartamento(),
                 encomenda.getDescricao(),
-                encomenda.getDataRecebimento(),
-		encomenda.getTokenConfirmacao()
+                encomenda.getDataRecebimento()
         );
 
         OutboxEvento outboxEvento = OutboxEvento.builder()
@@ -106,29 +104,6 @@ public class EncomendaService {
         return encomendaRepository.save(encomenda);
     }
 
-
-    @Transactional
-    public void confirmarCiencia(UUID tokenConfirmacao) {
-
-        Encomenda encomenda = encomendaRepository
-                .findByTokenConfirmacao(tokenConfirmacao)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Token de confirmação inválido."
-                        )
-                );
-
-	if (encomenda.isMoradorCiente()) {
-	  return;
-	}
-
-        encomenda.setMoradorCiente(true);
-        encomenda.setDataCiencia(LocalDateTime.now());
-
-        encomendaRepository.save(encomenda);
-    }
-
-
     public List<Encomenda> listarPorMorador(Long moradorId) {
         return encomendaRepository
                 .findByMoradorIdOrderByDataRecebimentoDesc(moradorId);
@@ -146,4 +121,26 @@ public class EncomendaService {
             );
         }
     }
+
+    @Transactional
+    public void confirmarCienciaPorMorador(Long encomendaId, Long moradorId) {
+
+        Encomenda encomenda = buscarPorId(encomendaId);
+
+        if (!encomenda.getMorador().getId().equals(moradorId)) {
+            throw new IllegalArgumentException(
+                    "Esta encomenda não pertence ao morador autenticado."
+            );
+        }
+
+        if (encomenda.isMoradorCiente()) {
+            return;
+        }
+
+        encomenda.setMoradorCiente(true);
+        encomenda.setDataCiencia(LocalDateTime.now());
+
+        encomendaRepository.save(encomenda);
+    }
+
 }

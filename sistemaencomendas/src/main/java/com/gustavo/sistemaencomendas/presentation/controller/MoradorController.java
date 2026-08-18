@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import com.gustavo.sistemaencomendas.application.service.EncomendaService;
 import com.gustavo.sistemaencomendas.presentation.dto.CadastroMoradorRequest;
-import java.util.UUID;
 
 import org.springframework.security.core.Authentication;
 
@@ -143,31 +142,6 @@ public class MoradorController {
     }
 
 
-    @GetMapping("/morador/confirmar/{token}")
-    public String confirmarCiencia(
-            @PathVariable UUID token,
-            Model model
-    ) {
-
-        try {
-            encomendaService.confirmarCiencia(token);
-
-            model.addAttribute(
-                    "mensagem",
-                    "Sua ciência da encomenda foi registrada com sucesso."
-            );
-
-        } catch (IllegalArgumentException exception) {
-
-            model.addAttribute(
-                    "erro",
-                    exception.getMessage()
-            );
-        }
-
-        return "morador/confirmacao";
-    }
-
     @GetMapping("/cadastro/morador")
     public String cadastroPublicoMorador(Model model) {
         model.addAttribute(
@@ -203,6 +177,24 @@ public class MoradorController {
 
             return "morador/cadastro";
         }
+    }
+
+    @PostMapping("/morador/encomendas/{id}/confirmar")
+    public String confirmarCienciaAutenticado(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+
+        Morador morador = moradorService.buscarPorLogin(
+                authentication.getName()
+        );
+
+        encomendaService.confirmarCienciaPorMorador(
+                id,
+                morador.getId()
+        );
+
+        return "redirect:/morador/encomendas?confirmada";
     }
 
 }

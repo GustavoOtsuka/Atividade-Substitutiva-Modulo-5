@@ -11,7 +11,6 @@ public record EncomendaRecebidaEvento(
         String emailMorador,
         String apartamento,
         String descricao,
-        LocalDateTime dataRecebimento,
-	UUID tokenConfirmacao
+        LocalDateTime dataRecebimento
 ) {
 }

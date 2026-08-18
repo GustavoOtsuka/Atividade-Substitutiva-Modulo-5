@@ -38,7 +38,6 @@ public class SecurityConfig {
                                 "/cadastro/morador",
                                 "/cadastro/funcionario"
                         ).permitAll()
-			.requestMatchers("/morador/confirmar/**").permitAll()
                         .requestMatchers("/porteiro/**").hasRole("PORTEIRO")
                         .requestMatchers("/morador/**").hasRole("MORADOR")
                         .anyRequest().authenticated()

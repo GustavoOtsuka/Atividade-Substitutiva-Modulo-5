@@ -5,8 +5,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-import java.util.UUID;
-
 
 @Entity
 @Table(name = "encomendas")
@@ -43,10 +41,6 @@ public class Encomenda {
 
     @Column(nullable = false)
     private boolean moradorCiente;
-
-
-    @Column(name = "token_confirmacao", unique = true)
-    private UUID tokenConfirmacao;
 
     @Column(name = "data_ciencia")
     private LocalDateTime dataCiencia;
