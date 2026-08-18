@@ -34,7 +34,8 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
-                                "/api/auth/login"
+                                "/api/auth/login",
+                                "/cadastro/morador"
                         ).permitAll()
 			.requestMatchers("/morador/confirmar/**").permitAll()
                         .requestMatchers("/porteiro/**").hasRole("PORTEIRO")

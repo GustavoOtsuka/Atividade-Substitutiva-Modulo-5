@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import com.gustavo.sistemaencomendas.presentation.dto.CadastroMoradorRequest;
+
 @Service
 @RequiredArgsConstructor
 public class MoradorService {
@@ -98,6 +100,39 @@ public class MoradorService {
 
 	    return moradorRepository.save(morador);
 	}
+
+    public Morador cadastrarPublico(CadastroMoradorRequest dados) {
+
+        if (moradorRepository.existsByEmail(dados.email())) {
+            throw new IllegalArgumentException(
+                    "Já existe um morador com este e-mail."
+            );
+        }
+
+        if (moradorRepository.existsByLogin(dados.login())) {
+            throw new IllegalArgumentException(
+                    "Já existe um morador com este login."
+            );
+        }
+
+        if (dados.senha() == null || dados.senha().length() < 6) {
+            throw new IllegalArgumentException(
+                    "A senha deve possuir pelo menos 6 caracteres."
+            );
+        }
+
+        Morador morador = Morador.builder()
+                .nome(dados.nome())
+                .apartamento(dados.apartamento())
+                .telefone(dados.telefone())
+                .email(dados.email())
+                .login(dados.login())
+                .senha(passwordEncoder.encode(dados.senha()))
+                .ativo(true)
+                .build();
+
+        return moradorRepository.save(morador);
+    }
 
 
 }

@@ -8,7 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import com.gustavo.sistemaencomendas.application.service.EncomendaService;
-
+import com.gustavo.sistemaencomendas.presentation.dto.CadastroMoradorRequest;
 import java.util.UUID;
 
 import org.springframework.security.core.Authentication;
@@ -168,5 +168,41 @@ public class MoradorController {
         return "morador/confirmacao";
     }
 
+    @GetMapping("/cadastro/morador")
+    public String cadastroPublicoMorador(Model model) {
+        model.addAttribute(
+                "cadastro",
+                new CadastroMoradorRequest(
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        ""
+                )
+        );
+
+        return "morador/cadastro";
+    }
+
+    @PostMapping("/cadastro/morador")
+    public String cadastrarPublicoMorador(
+            @ModelAttribute("cadastro") CadastroMoradorRequest dados,
+            Model model
+    ) {
+        try {
+
+            moradorService.cadastrarPublico(dados);
+
+            return "redirect:/login?cadastroSucesso";
+
+        } catch (IllegalArgumentException e) {
+
+            model.addAttribute("erro", e.getMessage());
+            model.addAttribute("cadastro", dados);
+
+            return "morador/cadastro";
+        }
+    }
 
 }
