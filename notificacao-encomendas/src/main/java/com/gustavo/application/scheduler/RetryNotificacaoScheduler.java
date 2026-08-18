@@ -59,8 +59,7 @@ public class RetryNotificacaoScheduler {
                         notificacao.email,
                         notificacao.apartamento,
                         notificacao.descricao,
-                        notificacao.dataRecebimento,
-			notificacao.tokenConfirmacao
+                        notificacao.dataRecebimento
                 );
 
         try {

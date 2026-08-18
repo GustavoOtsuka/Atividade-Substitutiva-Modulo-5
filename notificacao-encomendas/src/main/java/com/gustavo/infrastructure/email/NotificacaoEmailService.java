@@ -16,38 +16,31 @@ public class NotificacaoEmailService {
 
     public void enviar(EncomendaRecebidaEvento evento) {
 
-
-	String linkConfirmacao =
-	       	"http://localhost:8080/morador/confirmar/"
-        	        + evento.tokenConfirmacao();
-
         String assunto = "Nova encomenda recebida";
 
-	String mensagem = """
-        Olá, %s.
+        String mensagem = """
+                Olá, %s.
 
-        A portaria recebeu uma nova encomenda para você.
+                A portaria recebeu uma nova encomenda para você.
 
-        Unidade: %s
-        Descrição: %s
-        Data do recebimento: %s
+                Unidade: %s
+                Descrição: %s
+                Data do recebimento: %s
 
-        Para confirmar que você tomou ciência da chegada da encomenda,
-        acesse o link abaixo:
+                Para confirmar que você tomou ciência da chegada da encomenda,
+                entre no Sistema de Encomendas com seu usuário e senha e acesse
+                a opção "Minhas encomendas".
 
-        %s
+                Após a confirmação, a portaria poderá identificar que você já
+                tomou ciência da encomenda.
 
-        Após confirmar, a portaria será informada de que você já foi notificado.
-
-        Esta é uma mensagem automática do Sistema de Encomendas.
-        """.formatted(
-        evento.nomeMorador(),
-        evento.apartamento(),
-        evento.descricao(),
-        evento.dataRecebimento(),
-        linkConfirmacao
-
-	);
+                Esta é uma mensagem automática do Sistema de Encomendas.
+                """.formatted(
+                evento.nomeMorador(),
+                evento.apartamento(),
+                evento.descricao(),
+                evento.dataRecebimento()
+        );
 
         mailer.send(
                 Mail.withText(
