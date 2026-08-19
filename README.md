@@ -1,81 +1,111 @@
 # Sistema de Gerenciamento de Encomendas
 
-Projeto desenvolvido para Atividade Substitutiva da Fase 4 da Pós-Graduação em Arquitetura e Desenvolvimento Java da FIAP.
+Projeto desenvolvido para a **Atividade Substitutiva do Módulo 5 da Pós-Graduação em Arquitetura e Desenvolvimento Java da FIAP**.
 
-O sistema permite que porteiros registrem encomendas destinadas aos moradores de um condomínio residencial. Após o recebimento da encomenda, uma mensagem é enviada de forma assíncrona para um microsserviço responsável pela notificação do morador. O morador pode confirmar a ciência da chegada da encomenda através de um link recebido por e-mail, enquanto a retirada da encomenda é posteriormente registrada pela portaria.
+O sistema gerencia o recebimento e a retirada de encomendas em um condomínio residencial, permitindo a interação entre funcionários da portaria e moradores.
 
-Projeto desenvolvido e testado no Debian Linux. A execução em Windows é recomendada através do Windows Subsystem for Linux (WSL).
+A aplicação utiliza autenticação e autorização, comunicação assíncrona entre serviços, persistência em PostgreSQL, envio de notificações por e-mail, testes automatizados, análise estática e documentação OpenAPI.
 
-
----
-
-# Objetivo
-
-Demonstrar a aplicação dos conceitos estudados durante a fase, utilizando:
-
-- Spring Boot
-- Quarkus
-- Apache Kafka
-- PostgreSQL
-- Docker
-- Arquitetura Limpa (Clean Architecture)
-- Mensageria assíncrona
-- Outbox Pattern
+O projeto foi desenvolvido e testado em **Debian Linux** utilizando **Java 21**.
 
 ---
 
-# Arquitetura
+# Funcionalidades
 
-O projeto é dividido em dois serviços independentes.
+## Funcionário / Porteiro
 
-## Sistema principal (Spring Boot)
+O funcionário pode:
 
-Responsável por:
+- realizar login no sistema;
+- cadastrar novos funcionários;
+- cadastrar moradores;
+- consultar moradores;
+- editar dados dos moradores;
+- registrar novas encomendas;
+- consultar encomendas recebidas;
+- registrar a retirada de uma encomenda;
+- acompanhar se o morador confirmou ciência da chegada da encomenda.
 
-- autenticação dos usuários;
-- cadastro de moradores;
-- registro de encomendas;
-- baixa de encomendas;
-- gravação da Outbox;
-- publicação de eventos no Kafka.
+## Morador
 
-## Serviço de Notificações (Quarkus)
+O morador pode:
 
-Responsável por:
+- realizar cadastro;
+- realizar login;
+- consultar suas encomendas;
+- confirmar ciência da chegada de uma encomenda;
+- consultar o status das encomendas;
+- atualizar seus próprios dados.
 
-- consumir mensagens do Kafka;
-- enviar e-mails aos moradores;
-- registrar notificações processadas;
-- realizar tentativas automáticas em caso de falha.
+A confirmação de ciência é realizada pelo **morador autenticado no sistema**, evitando confirmação por links públicos ou tokens enviados por e-mail.
 
 ---
 
 # Tecnologias utilizadas
 
+## Backend principal
+
 - Java 21
 - Spring Boot
 - Spring Security
 - Spring Data JPA
+- Spring MVC
 - Thymeleaf
-- Quarkus
-- Apache Kafka
-- PostgreSQL
-- Docker
 - Maven
+
+## Microsserviço de notificações
+
+- Java 21
+- Quarkus
+- SmallRye Reactive Messaging
+- Kafka
+- Quarkus Mailer
+
+## Infraestrutura
+
+- PostgreSQL 17
+- Apache Kafka 4.1.2
+- Docker
+- Docker Compose
+
+## Interface
+
+- HTML
+- Thymeleaf
 - Bootstrap
+
+## Segurança
+
+- Spring Security
+- JWT
+- BCrypt
+- Controle de acesso baseado em roles
+
+## Qualidade e testes
+
 - JUnit 5
 - Mockito
+- JaCoCo
+- SpotBugs
 
+## Documentação
 
-# Estrutura do projeto
+- OpenAPI 3.1
+- Swagger UI
 
-Atividade-Substitutiva-Modulo-4-A
+---
+
+# Arquitetura
+
+O projeto é dividido em dois módulos principais:
+
+```text
+Atividade-Substitutiva-Modulo-5/
 │
 ├── README.md
 │
 ├── sistemaencomendas/
 │   ├── src/
-│   ├── Dockerfile
 │   ├── docker-compose.yml
 │   ├── pom.xml
 │   └── ...
@@ -84,84 +114,272 @@ Atividade-Substitutiva-Modulo-4-A
     ├── src/
     ├── pom.xml
     └── ...
+```
 
+## `sistemaencomendas`
 
-# Fluxo da aplicação
+Aplicação principal desenvolvida com Spring Boot.
 
-O funcionamento do sistema ocorre da seguinte maneira:
+É responsável por:
 
-. O porteiro realiza o login.
-. Os moradores são cadastrados.
-. Uma encomenda é registrada para um morador.
-. A encomenda é gravada no banco de dados.
-. Um evento é registrado na tabela Outbox.
-. O evento é publicado no Apache Kafka.
-. O microsserviço Quarkus consome esse evento.
-. O microsserviço envia um e-mail ao morador.
-. O morador confirma a ciência através do link recebido.
-. Quando a encomenda é retirada, o porteiro registra a entrega.
+- autenticação e autorização;
+- geração e validação de JWT;
+- cadastro de moradores;
+- cadastro de funcionários;
+- gerenciamento das encomendas;
+- confirmação de ciência pelo morador;
+- registro de retirada;
+- persistência dos dados;
+- geração de eventos;
+- implementação do Outbox Pattern;
+- publicação dos eventos no Kafka;
+- interface web com Thymeleaf.
 
+## `notificacao-encomendas`
 
+Microsserviço desenvolvido com Quarkus.
 
+É responsável por:
+
+- consumir eventos do Apache Kafka;
+- processar notificações;
+- enviar e-mails aos moradores;
+- registrar notificações processadas;
+- controlar tentativas de envio;
+- realizar novas tentativas em caso de falha.
+
+---
+
+# Fluxo de uma encomenda
+
+O fluxo principal ocorre da seguinte forma:
+
+1. O funcionário realiza login.
+2. O funcionário registra uma nova encomenda para um morador.
+3. A encomenda é persistida no PostgreSQL.
+4. Na mesma operação é criado um evento na Outbox.
+5. O evento pendente é posteriormente publicado no Apache Kafka.
+6. O microsserviço Quarkus consome o evento.
+7. O Quarkus envia um e-mail ao morador informando sobre a encomenda.
+8. O morador entra no sistema utilizando seu usuário e senha.
+9. Em **Minhas encomendas**, o morador confirma que tomou ciência da chegada.
+10. A portaria passa a visualizar que a ciência foi confirmada.
+11. Quando o morador retirar a encomenda, o funcionário registra a retirada.
+
+---
+
+# Mensageria e resiliência
+
+A comunicação entre o sistema principal e o serviço de notificações é realizada através do **Apache Kafka**.
+
+O tópico utilizado é:
+
+```text
+encomendas.recebidas
+```
+
+O projeto utiliza o **Outbox Pattern**.
+
+Ao registrar uma encomenda, a aplicação não depende da disponibilidade imediata do serviço de e-mail. O evento é primeiro persistido na Outbox e posteriormente publicado no Kafka.
+
+Isso reduz o acoplamento entre o cadastro da encomenda e o envio da notificação.
+
+O microsserviço Quarkus também mantém o estado das notificações processadas e possui mecanismo de novas tentativas em caso de falha no envio.
+
+---
+
+# Segurança
+
+O projeto utiliza **Spring Security**.
+
+Existem dois perfis principais:
+
+```text
+ROLE_PORTEIRO
+ROLE_MORADOR
+```
+
+As rotas protegidas são liberadas de acordo com o perfil autenticado.
+
+As senhas são armazenadas utilizando **BCrypt**, evitando armazenamento de senha em texto puro.
+
+---
+
+# Autenticação JWT
+
+Além da autenticação utilizada pela interface web, o projeto disponibiliza autenticação através de JWT.
+
+Endpoint:
+
+```http
+POST /api/auth/login
+```
+
+O usuário envia suas credenciais e, após autenticação válida, recebe um token JWT contendo as informações necessárias para autorização.
+
+Exemplo conceitual de requisição:
+
+```json
+{
+  "login": "usuario",
+  "senha": "senha"
+}
+```
+
+O token pode ser utilizado através do cabeçalho:
+
+```http
+Authorization: Bearer TOKEN
+```
+
+O controle de acesso diferencia usuários com as roles `ROLE_PORTEIRO` e `ROLE_MORADOR`.
+
+---
+
+# Swagger / OpenAPI
+
+A API possui documentação automática utilizando **Springdoc OpenAPI** e **Swagger UI**.
+
+Com a aplicação Spring Boot em execução, acesse:
+
+```text
+http://localhost:8080/swagger-ui/index.html
+```
+
+A especificação OpenAPI também pode ser consultada em:
+
+```text
+http://localhost:8080/v3/api-docs
+```
+
+A documentação apresenta o endpoint REST de autenticação:
+
+```text
+POST /api/auth/login
+```
+
+e os respectivos modelos de requisição e resposta.
+
+---
+
+# Banco de dados
+
+O projeto utiliza **PostgreSQL 17**.
+
+O banco utilizado é:
+
+```text
+sistemaencomendas
+```
+
+Usuário padrão do ambiente de desenvolvimento:
+
+```text
+postgres
+```
+
+Porta exposta pelo Docker:
+
+```text
+5433
+```
+
+O Spring Boot e o Quarkus utilizam o mesmo banco durante a execução local.
+
+---
+
+# Apache Kafka
+
+O Kafka é executado através do Docker Compose.
+
+Container:
+
+```text
+sistemaencomendas-kafka
+```
+
+Porta:
+
+```text
+9092
+```
+
+Tópico utilizado pela aplicação:
+
+```text
+encomendas.recebidas
+```
+
+O grupo consumidor do microsserviço é:
+
+```text
+notificacao-encomendas
+```
+
+---
 
 # Como executar o projeto
 
-O projeto é dividido em dois módulos independentes:
+## Pré-requisitos
 
-- **sistemaencomendas/** → aplicação principal desenvolvida em Spring Boot;
-- **notificacao-encomendas/** → microsserviço de notificações desenvolvido em Quarkus.
+É necessário possuir:
 
-Antes de iniciar as aplicações, é necessário iniciar a infraestrutura do projeto.
+- Java 21;
+- Docker;
+- Docker Compose;
+- Git.
+
+O projeto possui Maven Wrapper, portanto não é obrigatório instalar uma versão global do Maven.
 
 ---
 
 ## 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/GustavoOtsuka/Atividade-Substitutiva-Modulo-4-A.git
+git clone https://github.com/GustavoOtsuka/Atividade-Substitutiva-Modulo-5.git
 
-cd Atividade-Substitutiva-Modulo-4-A
+cd Atividade-Substitutiva-Modulo-5
 ```
-
-Todos os comandos abaixo devem ser executados a partir desta pasta, salvo quando indicado o contrário.
 
 ---
 
-## 2. Iniciar a infraestrutura
+## 2. Iniciar PostgreSQL e Kafka
 
-O arquivo `docker-compose.yml` está localizado na pasta **sistemaencomendas**.
+O `docker-compose.yml` está localizado no módulo `sistemaencomendas`.
 
-Partindo da pasta raiz do projeto, execute:
+Execute:
 
 ```bash
 cd sistemaencomendas
-
 docker compose up -d
 ```
 
-Esse comando iniciará os containers necessários para a execução da aplicação, incluindo o banco de dados PostgreSQL.
-
-Para verificar se os containers foram iniciados corretamente:
+Verifique os containers:
 
 ```bash
 docker ps
 ```
 
-Após iniciar os containers, mantenha este terminal aberto ou abra um novo terminal para executar a aplicação Spring Boot.
+Devem estar disponíveis:
+
+```text
+sistemaencomendas-postgres
+sistemaencomendas-kafka
+```
+
+O PostgreSQL é exposto na porta `5433` e o Kafka na porta `9092`.
 
 ---
 
 ## 3. Executar a aplicação Spring Boot
 
-Abra um terminal.
-
-Entre na pasta:
+Dentro de:
 
 ```bash
 cd sistemaencomendas
 ```
 
-Execute:
+execute:
 
 ```bash
 ./mvnw spring-boot:run
@@ -169,45 +387,15 @@ Execute:
 
 A aplicação estará disponível em:
 
-```
+```text
 http://localhost:8080
 ```
 
-
-### Acesso do morador
-
-Ao cadastrar um novo morador, o sistema define automaticamente a senha inicial como:
-
-123456
-
-Essa senha é armazenada de forma criptografada utilizando o Spring Security (BCrypt).
-
-O login utilizado é o mesmo informado durante o cadastro do morador.
-
-
-
-### Acesso do porteiro
-
-login: porteiro
-senha: 123456
-
-Essa senha é armazenada de forma criptografada utilizando o Spring Security (BCrypt).
-
-
-
 ---
 
-## 4. Executar o microsserviço Quarkus
+# Executar o microsserviço Quarkus
 
-Abra um **novo terminal**.
-
-Volte para a raiz do projeto:
-
-```bash
-cd Atividade-Substitutiva-Modulo-4-A
-```
-
-Entre na pasta do microsserviço:
+Abra outro terminal e, a partir da raiz do projeto:
 
 ```bash
 cd notificacao-encomendas
@@ -219,96 +407,228 @@ Execute:
 ./mvnw quarkus:dev
 ```
 
-O microsserviço ficará aguardando mensagens enviadas pelo Apache Kafka.
+O Quarkus utiliza a porta:
 
----
+```text
+8081
+```
 
-## 5. Apache Kafka
-
-O sistema utiliza o Apache Kafka para realizar a comunicação assíncrona entre a aplicação principal e o microsserviço de notificações.
-
-Sempre que uma nova encomenda é cadastrada:
-
-1. o Spring Boot grava um evento na Outbox;
-2. o evento é publicado no Kafka;
-3. o Quarkus consome esse evento;
-4. o e-mail é enviado ao morador.
+e permanece consumindo os eventos enviados para o Kafka.
 
 ---
 
 # Envio de e-mails
 
-O microsserviço pode funcionar de duas maneiras.
+O microsserviço utiliza o Quarkus Mailer.
 
-## Modo de desenvolvimento (Mock)
+A configuração permite utilizar uma conta Gmail através de variáveis de ambiente, evitando armazenar credenciais diretamente no código-fonte.
 
-Por padrão, o projeto utiliza:
+## Envio real utilizando Gmail
 
-```
-MAILER_MOCK=true
-```
+É necessário utilizar uma **Senha de App do Google**.
 
-Nesse modo nenhum e-mail real é enviado. O conteúdo é apenas registrado nos logs da aplicação, permitindo testar todo o fluxo sem a necessidade de configurar uma conta de e-mail.
-
----
-
-## Enviando e-mails reais
-
-Caso deseje testar o envio real de e-mails, é possível utilizar uma conta Gmail.
-
-### Passo 1
-
-Ative a verificação em duas etapas na conta Google.
-
-### Passo 2
-
-No painel da conta Google, acesse:
-
-**Segurança → Senhas de app**
-
-Crie uma nova senha de aplicativo para o projeto.
-
-O Google fornecerá uma senha semelhante a:
-
-```
-abcd efgh ijkl mnop
-```
-
-Essa senha é diferente da senha utilizada para acessar sua conta.
-
-### Passo 3
-
-Antes de iniciar o microsserviço Quarkus, exporte as variáveis de ambiente:
+Antes de iniciar o Quarkus:
 
 ```bash
 export MAILER_MOCK=false
-
 export GMAIL_USUARIO=seuemail@gmail.com
-
-export GMAIL_SENHA_APP="sua senha de app"
+export GMAIL_SENHA_APP="sua-senha-de-app"
 ```
 
-Exemplo:
-
-```bash
-export MAILER_MOCK=false
-
-export GMAIL_USUARIO=exemplo@gmail.com
-
-export GMAIL_SENHA_APP="abcdefghijklmnop"
-```
-
-Depois execute normalmente:
+Depois:
 
 ```bash
 ./mvnw quarkus:dev
 ```
 
-A partir desse momento, todas as notificações serão enviadas para os moradores utilizando a conta Gmail configurada.
+> Nunca envie `GMAIL_SENHA_APP` para o Git ou armazene a senha diretamente no repositório.
 
-> **Importante:** nunca compartilhe sua Senha de App nem a envie para repositórios públicos.
+---
 
+## Modo mock
 
+Caso seja desejável testar o processamento sem enviar um e-mail real:
 
+```bash
+export MAILER_MOCK=true
+```
 
+Depois:
 
+```bash
+./mvnw quarkus:dev
+```
+
+Nesse modo o envio é simulado.
+
+---
+
+# Testes automatizados
+
+O módulo Spring Boot possui testes unitários e testes de integração utilizando:
+
+- JUnit 5;
+- Mockito;
+- Spring Boot Test.
+
+Para executar:
+
+```bash
+cd sistemaencomendas
+./mvnw clean test
+```
+
+Na última execução realizada durante o desenvolvimento:
+
+```text
+Tests run: 38
+Failures: 0
+Errors: 0
+Skipped: 0
+
+BUILD SUCCESS
+```
+
+Foram testados componentes relacionados a:
+
+- moradores;
+- funcionários;
+- encomendas;
+- autenticação;
+- JWT;
+- carregamento de usuários;
+- controllers;
+- autorização por perfil;
+- integração de segurança.
+
+---
+
+# Cobertura de testes com JaCoCo
+
+O projeto utiliza **JaCoCo** para geração do relatório de cobertura.
+
+O relatório é gerado durante:
+
+```bash
+./mvnw clean test
+```
+
+O relatório HTML pode ser encontrado em:
+
+```text
+sistemaencomendas/target/site/jacoco/index.html
+```
+
+Na última medição realizada durante o desenvolvimento foram obtidos:
+
+```text
+Cobertura de instruções: 52,76%
+Cobertura de branches:   60,71%
+Cobertura de linhas:     48,15%
+```
+
+Esses valores representam a cobertura global do módulo Spring Boot, incluindo controllers, configurações, infraestrutura e demais classes analisadas pelo JaCoCo.
+
+---
+
+# Análise estática com SpotBugs
+
+O projeto utiliza **SpotBugs** para análise estática do código Java.
+
+Para executar:
+
+```bash
+cd sistemaencomendas
+./mvnw spotbugs:check
+```
+
+A configuração utilizada prioriza problemas de severidade alta.
+
+Na validação realizada durante o desenvolvimento:
+
+```text
+BugInstance size is 0
+Error size is 0
+No errors/warnings found
+
+BUILD SUCCESS
+```
+
+---
+
+# Relatório JaCoCo
+
+Após executar os testes:
+
+```bash
+./mvnw clean test
+```
+
+o relatório pode ser aberto através de:
+
+```text
+target/site/jacoco/index.html
+```
+
+Em ambiente Linux com interface gráfica, por exemplo:
+
+```bash
+xdg-open target/site/jacoco/index.html
+```
+
+---
+
+# Parando a infraestrutura
+
+Para encerrar os containers:
+
+```bash
+cd sistemaencomendas
+docker compose down
+```
+
+Para também remover os volumes e apagar os dados locais:
+
+```bash
+docker compose down -v
+```
+
+> O comando com `-v` remove os dados persistidos do PostgreSQL e do Kafka.
+
+---
+
+# Principais conceitos demonstrados
+
+O projeto demonstra a utilização prática de:
+
+- arquitetura em camadas;
+- separação de responsabilidades;
+- microsserviços;
+- Spring Boot;
+- Quarkus;
+- autenticação e autorização;
+- JWT;
+- BCrypt;
+- controle de acesso por roles;
+- PostgreSQL;
+- JPA/Hibernate;
+- Apache Kafka;
+- comunicação assíncrona;
+- Outbox Pattern;
+- processamento resiliente de notificações;
+- Docker Compose;
+- testes unitários;
+- testes de integração;
+- Mockito;
+- JaCoCo;
+- análise estática com SpotBugs;
+- OpenAPI;
+- Swagger.
+
+---
+
+# Autor
+
+**Gustavo Otsuka**
+
+Projeto acadêmico desenvolvido para a Pós-Graduação em Arquitetura e Desenvolvimento Java da FIAP.
