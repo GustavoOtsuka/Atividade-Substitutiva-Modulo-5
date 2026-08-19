@@ -36,7 +36,10 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/api/auth/login",
                                 "/cadastro/morador",
-                                "/cadastro/funcionario"
+                                "/cadastro/funcionario",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers("/porteiro/**").hasRole("PORTEIRO")
                         .requestMatchers("/morador/**").hasRole("MORADOR")
