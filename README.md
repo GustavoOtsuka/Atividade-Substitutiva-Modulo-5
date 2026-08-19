@@ -4,7 +4,7 @@ Projeto desenvolvido para a **Atividade Substitutiva do Módulo 5 da Pós-Gradua
 
 O sistema gerencia o recebimento e a retirada de encomendas em um condomínio residencial, permitindo a interação entre funcionários da portaria e moradores.
 
-A aplicação utiliza autenticação e autorização, comunicação assíncrona entre serviços, persistência em PostgreSQL, envio de notificações por e-mail, testes automatizados, análise estática e documentação OpenAPI.
+A aplicação utiliza autenticação e autorização, comunicação assíncrona entre serviços, persistência em PostgreSQL, envio de notificações por e-mail, testes automatizados, análise estática, documentação OpenAPI e execução containerizada com Docker.
 
 O projeto foi desenvolvido e testado em **Debian Linux** utilizando **Java 21**.
 
@@ -58,7 +58,7 @@ A confirmação de ciência é realizada pelo **morador autenticado no sistema**
 - Java 21
 - Quarkus
 - SmallRye Reactive Messaging
-- Kafka
+- Apache Kafka
 - Quarkus Mailer
 
 ## Infraestrutura
@@ -97,7 +97,7 @@ A confirmação de ciência é realizada pelo **morador autenticado no sistema**
 
 # Arquitetura
 
-O projeto é dividido em dois módulos principais:
+O projeto é organizado como um monorepo contendo a aplicação principal Spring Boot e o microsserviço Quarkus de notificações.
 
 ```text
 Atividade-Substitutiva-Modulo-5/
@@ -106,12 +106,14 @@ Atividade-Substitutiva-Modulo-5/
 │
 ├── sistemaencomendas/
 │   ├── src/
+│   ├── Dockerfile
 │   ├── docker-compose.yml
 │   ├── pom.xml
 │   └── ...
 │
 └── notificacao-encomendas/
     ├── src/
+    ├── Dockerfile
     ├── pom.xml
     └── ...
 ```
@@ -162,9 +164,9 @@ O fluxo principal ocorre da seguinte forma:
 6. O microsserviço Quarkus consome o evento.
 7. O Quarkus envia um e-mail ao morador informando sobre a encomenda.
 8. O morador entra no sistema utilizando seu usuário e senha.
-9. Em **Minhas encomendas**, o morador confirma que tomou ciência da chegada.
+9. Em **Minhas Encomendas**, o morador confirma que tomou ciência da chegada.
 10. A portaria passa a visualizar que a ciência foi confirmada.
-11. Quando o morador retirar a encomenda, o funcionário registra a retirada.
+11. Quando o morador retira a encomenda, o funcionário registra a retirada no sistema.
 
 ---
 
@@ -186,6 +188,8 @@ Isso reduz o acoplamento entre o cadastro da encomenda e o envio da notificaçã
 
 O microsserviço Quarkus também mantém o estado das notificações processadas e possui mecanismo de novas tentativas em caso de falha no envio.
 
+Essa arquitetura permite maior resiliência diante de indisponibilidades temporárias do serviço de notificação ou de e-mail.
+
 ---
 
 # Segurança
@@ -202,6 +206,8 @@ ROLE_MORADOR
 As rotas protegidas são liberadas de acordo com o perfil autenticado.
 
 As senhas são armazenadas utilizando **BCrypt**, evitando armazenamento de senha em texto puro.
+
+A confirmação de ciência de uma encomenda é realizada somente pelo morador autenticado correspondente, evitando a utilização de links públicos de confirmação.
 
 ---
 
@@ -266,7 +272,7 @@ e os respectivos modelos de requisição e resposta.
 
 O projeto utiliza **PostgreSQL 17**.
 
-O banco utilizado é:
+Banco:
 
 ```text
 sistemaencomendas
@@ -278,13 +284,23 @@ Usuário padrão do ambiente de desenvolvimento:
 postgres
 ```
 
-Porta exposta pelo Docker:
+Na execução através do Docker Compose, a porta do PostgreSQL é exposta no host como:
 
 ```text
 5433
 ```
 
-O Spring Boot e o Quarkus utilizam o mesmo banco durante a execução local.
+Portanto, aplicações executadas diretamente no host utilizam:
+
+```text
+localhost:5433
+```
+
+Dentro da rede Docker, os containers utilizam:
+
+```text
+sistemaencomendas-postgres:5432
+```
 
 ---
 
@@ -298,23 +314,37 @@ Container:
 sistemaencomendas-kafka
 ```
 
-Porta:
-
-```text
-9092
-```
-
-Tópico utilizado pela aplicação:
+Tópico utilizado:
 
 ```text
 encomendas.recebidas
 ```
 
-O grupo consumidor do microsserviço é:
+Grupo consumidor do microsserviço:
 
 ```text
 notificacao-encomendas
 ```
+
+A configuração utiliza listeners distintos para permitir comunicação tanto a partir do host quanto entre containers.
+
+## Acesso pelo host
+
+Aplicações executadas diretamente no Debian utilizam:
+
+```text
+localhost:9092
+```
+
+## Acesso pela rede Docker
+
+Containers utilizam:
+
+```text
+sistemaencomendas-kafka:29092
+```
+
+Essa separação permite executar os serviços localmente ou de forma containerizada sem alterar o código-fonte.
 
 ---
 
@@ -351,6 +381,7 @@ Execute:
 
 ```bash
 cd sistemaencomendas
+
 docker compose up -d
 ```
 
@@ -367,7 +398,12 @@ sistemaencomendas-postgres
 sistemaencomendas-kafka
 ```
 
-O PostgreSQL é exposto na porta `5433` e o Kafka na porta `9092`.
+Na execução pelo host:
+
+```text
+PostgreSQL: localhost:5433
+Kafka:      localhost:9092
+```
 
 ---
 
@@ -393,7 +429,7 @@ http://localhost:8080
 
 ---
 
-# Executar o microsserviço Quarkus
+# Executar o microsserviço Quarkus localmente
 
 Abra outro terminal e, a partir da raiz do projeto:
 
@@ -415,11 +451,118 @@ O Quarkus utiliza a porta:
 
 e permanece consumindo os eventos enviados para o Kafka.
 
+Na execução local são utilizados, por padrão:
+
+```text
+Kafka:      localhost:9092
+PostgreSQL: localhost:5433
+```
+
+---
+
+# Executar o microsserviço Quarkus em Docker
+
+O microsserviço de notificações também possui um `Dockerfile` próprio e pode ser executado de forma containerizada.
+
+Primeiro, certifique-se de que PostgreSQL e Kafka estejam em execução:
+
+```bash
+cd sistemaencomendas
+
+docker compose up -d
+```
+
+Depois, a partir da raiz do projeto, gere o pacote do Quarkus:
+
+```bash
+cd notificacao-encomendas
+
+./mvnw clean package -DskipTests
+```
+
+Construa a imagem:
+
+```bash
+docker build -t notificacao-encomendas:modulo5 .
+```
+
+Execute o container conectando-o à rede criada pelo Docker Compose:
+
+```bash
+docker run --rm \
+  --name notificacao-encomendas-container \
+  --network sistemaencomendas_default \
+  -p 8081:8081 \
+  -e KAFKA_BOOTSTRAP_SERVERS=sistemaencomendas-kafka:29092 \
+  -e DATABASE_URL=jdbc:postgresql://sistemaencomendas-postgres:5432/sistemaencomendas \
+  -e MAILER_MOCK=true \
+  notificacao-encomendas:modulo5
+```
+
+Nesse modo, o microsserviço utiliza:
+
+```text
+Kafka:      sistemaencomendas-kafka:29092
+PostgreSQL: sistemaencomendas-postgres:5432
+Quarkus:    localhost:8081
+```
+
+O microsserviço foi configurado para utilizar variáveis de ambiente para os endereços do Kafka e do PostgreSQL.
+
+Dessa forma, a mesma aplicação pode ser executada localmente ou dentro de um container Docker.
+
+---
+
+# Docker
+
+O projeto utiliza Docker em diferentes pontos da solução.
+
+## Infraestrutura
+
+O Docker Compose é responsável por iniciar:
+
+- PostgreSQL;
+- Apache Kafka.
+
+## Aplicação Spring Boot
+
+O módulo `sistemaencomendas` possui um `Dockerfile` para geração da imagem da aplicação Spring Boot.
+
+Antes de construir a imagem, gere o pacote:
+
+```bash
+cd sistemaencomendas
+
+./mvnw clean package
+```
+
+Depois:
+
+```bash
+docker build -t sistemaencomendas:modulo5 .
+```
+
+## Microsserviço Quarkus
+
+O módulo `notificacao-encomendas` também possui seu próprio `Dockerfile`.
+
+A imagem é construída com:
+
+```bash
+cd notificacao-encomendas
+
+./mvnw clean package -DskipTests
+
+docker build -t notificacao-encomendas:modulo5 .
+```
+
+Com isso, tanto a aplicação principal quanto o microsserviço possuem configuração para geração de imagens Docker, enquanto PostgreSQL e Kafka são gerenciados pelo Docker Compose.
+
 ---
 
 # Envio de e-mails
 
-O microsserviço utiliza o Quarkus Mailer.
+O microsserviço utiliza o **Quarkus Mailer**.
 
 A configuração permite utilizar uma conta Gmail através de variáveis de ambiente, evitando armazenar credenciais diretamente no código-fonte.
 
@@ -441,7 +584,7 @@ Depois:
 ./mvnw quarkus:dev
 ```
 
-> Nunca envie `GMAIL_SENHA_APP` para o Git ou armazene a senha diretamente no repositório.
+> **Importante:** nunca envie `GMAIL_SENHA_APP` para o Git nem armazene a senha diretamente no repositório.
 
 ---
 
@@ -461,6 +604,8 @@ Depois:
 
 Nesse modo o envio é simulado.
 
+Para a execução containerizada apresentada anteriormente, `MAILER_MOCK=true` também é informado como variável de ambiente no comando `docker run`.
+
 ---
 
 # Testes automatizados
@@ -475,6 +620,7 @@ Para executar:
 
 ```bash
 cd sistemaencomendas
+
 ./mvnw clean test
 ```
 
@@ -539,6 +685,7 @@ Para executar:
 
 ```bash
 cd sistemaencomendas
+
 ./mvnw spotbugs:check
 ```
 
@@ -584,6 +731,7 @@ Para encerrar os containers:
 
 ```bash
 cd sistemaencomendas
+
 docker compose down
 ```
 
@@ -616,7 +764,10 @@ O projeto demonstra a utilização prática de:
 - comunicação assíncrona;
 - Outbox Pattern;
 - processamento resiliente de notificações;
+- Docker;
 - Docker Compose;
+- execução containerizada;
+- configuração por variáveis de ambiente;
 - testes unitários;
 - testes de integração;
 - Mockito;
